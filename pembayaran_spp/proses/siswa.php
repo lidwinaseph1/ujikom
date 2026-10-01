@@ -14,6 +14,19 @@ if ($aksi == 'tambah') {
     $no_telp = $_POST['no_telp'];
     $id_spp = $_POST['id_spp'];
 
+    // Cek NISN apakah sudah ada
+    $cek_nisn = mysqli_query(
+        $koneksi,
+        "SELECT * FROM tb_siswa WHERE nisn='$nisn'"
+    );
+
+    if (mysqli_num_rows($cek_nisn) > 0) {
+
+        header("Location: ../siswa.php?pesan=duplikat");
+        exit;
+    }
+
+    // Ambil nama kelas
     $kelas = mysqli_query(
         $koneksi,
         "SELECT nama_kelas FROM tb_kelas WHERE id_kelas='$id_kelas'"
@@ -22,14 +35,34 @@ if ($aksi == 'tambah') {
     $data_kelas = mysqli_fetch_assoc($kelas);
     $nama_kelas = $data_kelas['nama_kelas'];
 
+    // Simpan data siswa
     mysqli_query($koneksi, "
         INSERT INTO tb_siswa
-        (nisn, nis, nama, id_kelas, nama_kelas, alamat, no_telp, id_spp)
+        (
+            nisn,
+            nis,
+            nama,
+            id_kelas,
+            nama_kelas,
+            alamat,
+            no_telp,
+            id_spp
+        )
         VALUES
-        ('$nisn', '$nis', '$nama', '$id_kelas', '$nama_kelas', '$alamat', '$no_telp', '$id_spp')
+        (
+            '$nisn',
+            '$nis',
+            '$nama',
+            '$id_kelas',
+            '$nama_kelas',
+            '$alamat',
+            '$no_telp',
+            '$id_spp'
+        )
     ");
 
-    header("Location: ../siswa.php");
+    header("Location: ../siswa.php?pesan=tambah");
+    exit;
 }
 
 
@@ -45,6 +78,21 @@ if ($aksi == 'edit') {
     $no_telp = $_POST['no_telp'];
     $id_spp = $_POST['id_spp'];
 
+    // Cek jika NISN diganti dan ternyata sudah digunakan siswa lain
+    $cek_nisn = mysqli_query(
+        $koneksi,
+        "SELECT * FROM tb_siswa
+         WHERE nisn='$nisn'
+         AND nisn!='$nisn_lama'"
+    );
+
+    if (mysqli_num_rows($cek_nisn) > 0) {
+
+        header("Location: ../siswa.php?pesan=duplikat");
+        exit;
+    }
+
+    // Ambil nama kelas
     $kelas = mysqli_query(
         $koneksi,
         "SELECT nama_kelas FROM tb_kelas WHERE id_kelas='$id_kelas'"
@@ -53,8 +101,10 @@ if ($aksi == 'edit') {
     $data_kelas = mysqli_fetch_assoc($kelas);
     $nama_kelas = $data_kelas['nama_kelas'];
 
+    // Update data
     mysqli_query($koneksi, "
         UPDATE tb_siswa SET
+
             nisn='$nisn',
             nis='$nis',
             nama='$nama',
@@ -63,10 +113,12 @@ if ($aksi == 'edit') {
             alamat='$alamat',
             no_telp='$no_telp',
             id_spp='$id_spp'
+
         WHERE nisn='$nisn_lama'
     ");
 
-    header("Location: ../siswa.php");
+    header("Location: ../siswa.php?pesan=edit");
+    exit;
 }
 
 
@@ -79,6 +131,8 @@ if ($aksi == 'hapus') {
         "DELETE FROM tb_siswa WHERE nisn='$nisn'"
     );
 
-    header("Location: ../siswa.php");
+    header("Location: ../siswa.php?pesan=hapus");
+    exit;
 }
+
 ?>

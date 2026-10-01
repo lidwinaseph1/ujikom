@@ -2,32 +2,76 @@
 
 include '../koneksi.php';
 
-$aksi = $_POST['aksi'];
+$aksi = isset($_POST['aksi']) ? $_POST['aksi'] : '';
+
+if ($aksi == '') {
+    header("Location: ../pembayaran.php");
+    exit;
+}
 
 if ($aksi == 'tambah') {
 
     $id_pembayaran = $_POST['id_pembayaran'];
     $nisn = $_POST['nisn'];
     $tgl_bayar = $_POST['tgl_bayar'];
-    $jumlah_bulan = $_POST['jumlah_bulan'];
-    $nominal_bayar = $_POST['nominal_bayar'];
-    $jumlah_bayar = $_POST['jumlah_bayar'];
-    $status = $_POST['status'];
 
-    $data_siswa = mysqli_query(
-        $koneksi,
-        "SELECT id_spp FROM tb_siswa WHERE nisn='$nisn'"
-    );
+    $jumlah_bulan =
+        (int) $_POST['jumlah_bulan'];
 
-    $siswa = mysqli_fetch_assoc($data_siswa);
-    $id_spp = $siswa['id_spp'];
+    $uang_bayar =
+        (int) $_POST['nominal_bayar'];
 
-    $kembalian = $jumlah_bayar - $nominal_bayar;
 
-    $tgl_terakhir_bayar = $tgl_bayar;
-    $batas_pembayaran = date('Y-m-d', strtotime($tgl_bayar . ' +1 month'));
+    // Ambil id_spp dan nominal SPP siswa
+    $query = mysqli_query($koneksi, "
 
+        SELECT
+            tb_siswa.id_spp,
+            tb_spp.nominal
+
+        FROM tb_siswa
+
+        JOIN tb_spp
+            ON tb_siswa.id_spp = tb_spp.id_spp
+
+        WHERE tb_siswa.nisn = '$nisn'
+
+    ");
+
+
+    $data = mysqli_fetch_assoc($query);
+
+
+    $id_spp = $data['id_spp'];
+
+    $nominal_spp =
+        (int) $data['nominal'];
+
+
+    // Hitung total tagihan
+    $total_tagihan =
+        $nominal_spp * $jumlah_bulan;
+
+
+    // Tentukan status
+    if ($uang_bayar >= $total_tagihan) {
+
+        $status = 'Sudah Lunas';
+
+        $kembalian =
+            $uang_bayar - $total_tagihan;
+
+    } else {
+
+        $status = 'Belum Lunas';
+
+        $kembalian = 0;
+    }
+
+
+    // Simpan pembayaran
     mysqli_query($koneksi, "
+
         INSERT INTO tb_pembayaran
         (
             id_pembayaran,
@@ -42,80 +86,30 @@ if ($aksi == 'tambah') {
             jumlah_bayar,
             kembalian
         )
+
         VALUES
         (
             '$id_pembayaran',
             '$status',
             '$nisn',
             '$tgl_bayar',
-            '$tgl_terakhir_bayar',
-            '$batas_pembayaran',
+            '$tgl_bayar',
+            '$tgl_bayar',
             '$jumlah_bulan',
             '$id_spp',
-            '$nominal_bayar',
-            '$jumlah_bayar',
+            '$uang_bayar',
+            '$total_tagihan',
             '$kembalian'
         )
+
     ");
 
-    header("Location: ../pembayaran.php");
-    exit;
-}
 
-
-if ($aksi == 'edit') {
-
-    $id_pembayaran = $_POST['id_pembayaran'];
-    $nisn = $_POST['nisn'];
-    $tgl_bayar = $_POST['tgl_bayar'];
-    $jumlah_bulan = $_POST['jumlah_bulan'];
-    $nominal_bayar = $_POST['nominal_bayar'];
-    $jumlah_bayar = $_POST['jumlah_bayar'];
-    $status = $_POST['status'];
-
-    $data_siswa = mysqli_query(
-        $koneksi,
-        "SELECT id_spp FROM tb_siswa WHERE nisn='$nisn'"
+    header(
+        "Location: ../pembayaran.php"
     );
 
-    $siswa = mysqli_fetch_assoc($data_siswa);
-    $id_spp = $siswa['id_spp'];
-
-    $kembalian = $jumlah_bayar - $nominal_bayar;
-
-    $tgl_terakhir_bayar = $tgl_bayar;
-    $batas_pembayaran = date('Y-m-d', strtotime($tgl_bayar . ' +1 month'));
-
-    mysqli_query($koneksi, "
-        UPDATE tb_pembayaran SET
-            nisn='$nisn',
-            tgl_bayar='$tgl_bayar',
-            tgl_terakhir_bayar='$tgl_terakhir_bayar',
-            batas_pembayaran='$batas_pembayaran',
-            jumlah_bulan='$jumlah_bulan',
-            id_spp='$id_spp',
-            nominal_bayar='$nominal_bayar',
-            jumlah_bayar='$jumlah_bayar',
-            kembalian='$kembalian',
-            status='$status'
-        WHERE id_pembayaran='$id_pembayaran'
-    ");
-
-    header("Location: ../pembayaran.php");
     exit;
 }
 
-
-if ($aksi == 'hapus') {
-
-    $id_pembayaran = $_POST['id_pembayaran'];
-
-    mysqli_query(
-        $koneksi,
-        "DELETE FROM tb_pembayaran WHERE id_pembayaran='$id_pembayaran'"
-    );
-
-    header("Location: ../pembayaran.php");
-    exit;
-}
 ?>
